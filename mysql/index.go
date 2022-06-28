@@ -7,10 +7,13 @@ import (
 
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
+	_ "github.com/go-sql-driver/mysql"
 	lconv "github.com/lixu-any/go-tools/conv"
 	lencry "github.com/lixu-any/go-tools/encry"
 	lredis "github.com/lixu-any/go-tools/redis"
 )
+
+var LMysqlCacheDB string //默认缓存数据库
 
 type MapMysqlConn struct {
 	Name   string
@@ -18,7 +21,9 @@ type MapMysqlConn struct {
 }
 
 //初始化MySQL
-func InitMysqls(conns []MapMysqlConn) (err error) {
+func InitMysqls(conns []MapMysqlConn, cachedb string) (err error) {
+
+	LMysqlCacheDB = cachedb
 
 	err = orm.RegisterDriver("mysql", orm.DRMySQL)
 	if err != nil {
@@ -85,6 +90,10 @@ func GetList(req ListConfig) (nums int64, lst []map[string]interface{}, err erro
 
 	if req.Exexpire == 0 {
 		req.Exexpire = DEFAULT_EXPIRE
+	}
+
+	if req.CacheDB == "" {
+		req.CacheDB = LMysqlCacheDB
 	}
 
 	var (
