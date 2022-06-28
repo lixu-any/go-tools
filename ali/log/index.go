@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"time"
 
@@ -25,10 +26,16 @@ type MapAlilogConfig struct {
 	Project         string
 	On              string
 	Debug           string
+
+	TableError string
+	TableDebug string
+	Env        string
 }
 
 //初始化阿里云日志
 func InitAliLog(config MapAlilogConfig) {
+
+	AliDefaultConfig = config
 
 	if config.On != "1" {
 		return
@@ -82,6 +89,10 @@ func Writelog(s string, topic string, ip string, config map[string]string) (err 
 		return
 	}
 
+	if AliDefaultConfig.Env != "" {
+		config["env"] = AliDefaultConfig.Env
+	}
+
 	log := producer.GenerateLog(uint32(time.Now().Unix()), config)
 
 	err = AliProducer.SendLog(AliDefaultConfig.Project, s, topic, ip, log)
@@ -94,36 +105,65 @@ func Writelog(s string, topic string, ip string, config map[string]string) (err 
 
 }
 
+// 获取正在运行的函数名
+func runFuncName(l int) (string, string, int) {
+
+	pc, file, line, _ := runtime.Caller(l)
+
+	name := runtime.FuncForPC(pc).Name()
+
+	split := strings.Split(name, ".")
+
+	funname := split[len(split)-1]
+
+	return funname, file, line
+}
+
 // 错误日志
-func Errors(fun string, f interface{}, v ...interface{}) {
+func Errors(f interface{}, v ...interface{}) {
+
+	funname, file, line := runFuncName(2)
 
 	logd := make(map[string]string)
 
-	logd["fun"] = fun
+	logd["fun"] = funname
+
+	logd["file"] = file
+
+	logd["line"] = fmt.Sprintf("%d", line)
 
 	logd["msg"] = formatLog(f, v)
 
 	logd["time"] = lconv.Int64ToStr(ltime.UninxTime())
 
-	logs.Error(fun, logd["msg"], logd["time"])
+	logs.Error("file::", file, ",line::", line, ",fun::", funname, "[", logd["msg"], "],time::", logd["time"])
 
-	go Writelog("error", fun, "127.0.0.1", logd)
+	if AliDefaultConfig.TableError != "" {
+		go Writelog(AliDefaultConfig.TableError, funname, "127.0.0.1", logd)
+	}
+
 }
 
 // 调试日志
-func Debug(fun string, f interface{}, v ...interface{}) {
+func Debug(f interface{}, v ...interface{}) {
+
+	funname, file, line := runFuncName(2)
 
 	logd := make(map[string]string)
 
-	logd["fun"] = fun
+	logd["fun"] = funname
+
+	logd["file"] = file
+
+	logd["line"] = fmt.Sprintf("%d", line)
 
 	logd["msg"] = formatLog(f, v)
 
 	logd["time"] = lconv.Int64ToStr(ltime.UninxTime())
 
-	logs.Error(fun, logd["msg"], logd["time"])
+	logs.Debug("file::", file, ",line::", line, ",fun::", funname, "[", logd["msg"], "],time::", logd["time"])
 
-	if AliDefaultConfig.Debug == "1" {
-		go Writelog("debug", fun, "127.0.0.1", logd)
+	if AliDefaultConfig.Debug == "1" && AliDefaultConfig.TableDebug != "" {
+		go Writelog(AliDefaultConfig.TableDebug, funname, "127.0.0.1", logd)
 	}
 }
