@@ -3,6 +3,8 @@ package l_mysql
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/astaxie/beego/logs"
@@ -43,24 +45,26 @@ func InitMysqls(conns []MapMysqlConn, cachedb string) (err error) {
 
 // ---------------------------
 type ListConfig struct {
-	TableName    string
-	Where        string
-	ColumnString []string
-	ColumnInt    []string
-	OrderBy      string
-	DBIndex      string
-	CacheDB      string
-	Orm          orm.Ormer
-	Exexpire     int
-	MaxCount     int
+	TableName    string    //表名
+	Where        string    // where 条件, isdel=0
+	ColumnString []string  //字符串字段
+	ColumnInt    []string  //数组字段
+	OrderBy      string    //排序
+	DBIndex      string    //指定数据库
+	CacheDB      string    //数据库缓存 Redis数据库索引
+	Orm          orm.Ormer //实例化 ORM
+	Exexpire     int       //缓存过期时间 -1不使用缓存
+	MaxCount     int       //最大条数 默认100
 }
 
 type ExecConfig struct {
-	TableName string
-	Where     string
-	Data      map[string]interface{}
-	DBIndex   string
-	Orm       orm.Ormer
+	TableName  string                 //表名
+	Where      string                 // where 条件, isdel=0
+	Data       map[string]interface{} //要添加 修改的数据，会自动判断变量类型
+	DBIndex    string                 //指定数据库
+	Orm        orm.Ormer              //实例化 ORM
+	CreaeSql   string                 //创建表的SQL语句
+	CreatePath string                 //创建表的SQL文件路径
 }
 
 const (
@@ -195,10 +199,11 @@ func Exec(req ExecConfig) (id int64, err error) {
 	}
 
 	var (
-		sql   string
-		count int
-		keys  string
-		vals  string
+		sql    string
+		count  int
+		keys   string
+		vals   string
+		tcount int
 	)
 
 	if req.Where == "" {
@@ -258,11 +263,30 @@ func Exec(req ExecConfig) (id int64, err error) {
 		req.Orm = orm.NewOrm()
 	}
 
+RSTART:
+
 	req.Orm.Using(req.DBIndex)
 
 	res, err := req.Orm.Raw(sql).Exec()
 
 	if err != nil {
+		if b := strings.Contains(err.Error(), "doesn't exist"); !b && (req.CreaeSql != "" || req.CreatePath != "") && tcount == 0 {
+
+			if req.CreaeSql == "" {
+				req.CreaeSql, _ = readFilesql(req.CreatePath, req.TableName)
+			}
+
+			//表不存在 去创建
+			err = CreateTable(req.CreaeSql, req.Orm, req.DBIndex)
+			if err != nil {
+				return
+			}
+
+			tcount++
+			//重新执行一次
+			goto RSTART
+
+		}
 		return
 	}
 
@@ -272,6 +296,35 @@ func Exec(req ExecConfig) (id int64, err error) {
 			return
 		}
 	}
+
+	return
+}
+
+func CreateTable(csql string, o orm.Ormer, dbindex string) (err error) {
+
+	o.Using(dbindex)
+
+	_, err = o.Raw(csql).Exec()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func readFilesql(pth, tbname string) (sql string, err error) {
+	filePtr, err := os.Open(pth)
+	if err != nil {
+		return
+	}
+	defer filePtr.Close()
+
+	by, err := ioutil.ReadAll(filePtr)
+	if err != nil {
+		return
+	}
+
+	sql = strings.Replace(string(by), "{tablename}", tbname, -1)
 
 	return
 }
