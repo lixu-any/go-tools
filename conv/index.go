@@ -2,7 +2,10 @@ package lconv
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
+
+	"github.com/astaxie/beego/logs"
 )
 
 //数字转换字符串
@@ -38,10 +41,28 @@ func FloatTostr(floatstr float64, i int) string {
 	return strconv.FormatFloat(floatstr, 'E', -1, i)
 }
 
-//json转字符串
-func JsonEncode(data interface{}) string {
-	datastr, _ := json.Marshal(data)
-	return string(datastr)
+//抓换成json
+func EveryToJson(data interface{}) map[string]interface{} {
+	str, _ := json.Marshal(data)
+	newval := make(map[string]interface{})
+	err := json.Unmarshal(str, &newval)
+	if err != nil {
+		logs.Error("EveryToJson:", err)
+	}
+	return newval
+}
+
+//任意类型转换字符串
+func InterfaceToStr(v interface{}) string {
+	str := ""
+	switch v.(type) {
+	case string:
+		str = v.(string)
+	default:
+		jsonbyte, _ := json.Marshal(v)
+		str = string(jsonbyte)
+	}
+	return str
 }
 
 //截取字符串
@@ -51,4 +72,32 @@ func Substr(str string, l int) string {
 		return string(str2[0:l])
 	}
 	return str
+}
+
+//json转字符串
+func JsonEncode(data interface{}) string {
+	datastr, _ := json.Marshal(data)
+	return string(datastr)
+}
+
+func StructMap(obj interface{}) map[string]interface{} {
+
+	var data = make(map[string]interface{})
+
+	by, _ := json.Marshal(obj)
+
+	json.Unmarshal([]byte(by), &data)
+
+	return data
+}
+
+func Struct2Map(obj interface{}) map[string]interface{} {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+
+	var data = make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		data[t.Field(i).Name] = v.Field(i).Interface()
+	}
+	return data
 }

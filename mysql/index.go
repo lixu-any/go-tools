@@ -1,4 +1,4 @@
-package l_mysql
+package lmysql
 
 import (
 	"encoding/json"
@@ -270,7 +270,7 @@ RSTART:
 	res, err := req.Orm.Raw(sql).Exec()
 
 	if err != nil {
-		if b := strings.Contains(err.Error(), "doesn't exist"); !b && (req.CreaeSql != "" || req.CreatePath != "") && tcount == 0 {
+		if b := strings.Contains(err.Error(), "doesn't exist"); b && (req.CreaeSql != "" || req.CreatePath != "") && tcount == 0 {
 
 			if req.CreaeSql == "" {
 				req.CreaeSql, _ = readFilesql(req.CreatePath, req.TableName)
