@@ -244,13 +244,13 @@ func Exec(req ExecConfig) (id int64, err error) {
 
 			switch v := v.(type) {
 			case string:
-				keys += fmt.Sprintf("%s=%s", k, v)
+				keys += fmt.Sprintf("%s='%s'", k, v)
 			case float64:
-				keys += fmt.Sprintf("%s=%f", k, v)
+				keys += fmt.Sprintf("%s='%f'", k, v)
 			case int, int32, int64, int8:
-				keys += fmt.Sprintf("%s=%d", k, v)
+				keys += fmt.Sprintf("%s='%d'", k, v)
 			default:
-				keys += fmt.Sprintf("%s=%s", k, v)
+				keys += fmt.Sprintf("%s='%s'", k, v)
 			}
 
 			count++
