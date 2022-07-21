@@ -300,6 +300,58 @@ RSTART:
 	return
 }
 
+type ExecSqlConfig struct {
+	Sql        string    //表名
+	TableName  string    //表名
+	DBIndex    string    //指定数据库
+	Orm        orm.Ormer //实例化 ORM
+	CreaeSql   string    //创建表的SQL语句
+	CreatePath string    //创建表的SQL文件路径
+}
+
+func ExecSql(config ExecSqlConfig) (err error) {
+
+	var (
+		tcount int
+	)
+
+	if config.Orm == nil {
+		config.Orm = orm.NewOrm()
+	}
+
+	if config.DBIndex == "" {
+		config.DBIndex = "default"
+	}
+
+RSTART:
+
+	config.Orm.Using(config.DBIndex)
+
+	_, err = config.Orm.Raw(config.Sql).Exec()
+	if err != nil {
+		if b := strings.Contains(err.Error(), "doesn't exist"); b && (config.CreaeSql != "" || config.CreatePath != "") && tcount == 0 {
+			if config.CreaeSql == "" {
+				config.CreaeSql, _ = readFilesql(config.CreatePath, config.TableName)
+			}
+
+			//表不存在 去创建
+			err = CreateTable(config.CreaeSql, config.Orm, config.DBIndex)
+			if err != nil {
+				return
+			}
+
+			tcount++
+			//重新执行一次
+			goto RSTART
+		}
+
+		return
+
+	}
+
+	return
+}
+
 func CreateTable(csql string, o orm.Ormer, dbindex string) (err error) {
 
 	o.Using(dbindex)

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+
 	"github.com/aliyun/aliyun-log-go-sdk/producer"
 	"github.com/astaxie/beego/logs"
 	lconv "github.com/lixu-any/go-tools/conv"
@@ -166,4 +168,27 @@ func Debug(f interface{}, v ...interface{}) {
 	if AliDefaultConfig.Debug == "1" && AliDefaultConfig.TableDebug != "" {
 		go Writelog(AliDefaultConfig.TableDebug, funname, "127.0.0.1", logd)
 	}
+}
+
+//查询日志
+func GetLog(logname, sql string, starttime, endtime int64, nums int64) (lst []map[string]string, err error) {
+
+	// 创建日志服务Client。
+	client := sls.CreateNormalInterface(AliDefaultConfig.Endpoint, AliDefaultConfig.AccessKeyId, AliDefaultConfig.AccessKeySecret, "")
+
+	resp, err := client.GetLogs(AliDefaultConfig.Project, logname, "", starttime, endtime, sql, nums, 0, true)
+	if err != nil {
+		return
+	}
+
+	logs := resp.Logs
+	for i := range logs {
+		var item = make(map[string]string)
+		for k, v := range logs[i] {
+			item[k] = v
+		}
+		lst = append(lst, item)
+	}
+
+	return
 }
