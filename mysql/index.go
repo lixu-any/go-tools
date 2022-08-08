@@ -72,7 +72,7 @@ const (
 	DEFAULT_MAXCOUNT = 100 //默认最大条数
 )
 
-func GetList(req ListConfig) (nums int64, lst []map[string]interface{}, err error) {
+func _getList(req ListConfig) (nums int64, lst []map[string]interface{}, err error) {
 
 	if req.TableName == "" || req.Where == "" || req.DBIndex == "" {
 		err = fmt.Errorf("req.TableName empty %s", req.TableName)
@@ -186,6 +186,50 @@ func GetList(req ListConfig) (nums int64, lst []map[string]interface{}, err erro
 	_redis.Val = lconv.JsonEncode(lst)
 
 	_redis.SetTime(req.Exexpire)
+
+	return
+}
+
+func GetList(req ListConfig) (nums int64, lst []map[string]interface{}, err error) {
+	return _getList(req)
+}
+
+//获取缓存的key名称
+func GetCacheName(tbname, where string, colstr, colint []string, cachedb ...string) string {
+
+	var qstr string
+
+	var colums string
+
+	if len(colstr) == 0 && len(colint) == 0 {
+		colums = "*"
+	} else {
+		ss := append(colstr, colint...)
+		colums = strings.Join(ss, ",")
+	}
+
+	qstr = where + colums
+
+	return "db::" + tbname + "::" + lencry.MD5(qstr)
+
+}
+
+//删除cache
+func DeleteCache(tbname, where string, colstr, colint []string, cachedb ...string) (err error) {
+
+	rkey := GetCacheName(tbname, where, colstr, colint)
+
+	var cdb = LMysqlCacheDB
+	if len(cachedb) > 0 {
+		cdb = cachedb[0]
+	}
+
+	_redis := lredis.LXredis{
+		Name: rkey,
+		DB:   cdb,
+	}
+
+	err = _redis.DELETE()
 
 	return
 }

@@ -101,3 +101,78 @@ func Struct2Map(obj interface{}) map[string]interface{} {
 	}
 	return data
 }
+
+func ToInt(a interface{}) int {
+
+	ai := 0
+
+	switch a := a.(type) {
+	case float64:
+		ai = int(a)
+	case float32:
+		ai = int(a)
+	case int:
+		ai = a
+	case int32:
+		ai = int(a)
+	case int64:
+		ai = int(a)
+	case string:
+		ai = StrToInt(a)
+
+	default:
+
+	}
+
+	return ai
+}
+
+func ToInt64(a interface{}) int64 {
+
+	var ai int64
+
+	switch a := a.(type) {
+	case float64:
+		ai = int64(a)
+	case float32:
+		ai = int64(a)
+	case int:
+		ai = int64(a)
+	case int32:
+		ai = int64(a)
+	case int64:
+		ai = a
+	case string:
+		ai = StrToInt64(a)
+
+	default:
+
+	}
+
+	return ai
+}
+
+func ToFloat64(a interface{}) float64 {
+
+	var ai float64
+
+	switch a := a.(type) {
+	case float64:
+		ai = a
+	case float32:
+		ai = float64(a)
+	case int:
+		ai = float64(a)
+	case int32:
+		ai = float64(a)
+	case int64:
+		ai = float64(a)
+	case string:
+		ai = StrToFloat64(a, 64)
+
+	default:
+
+	}
+
+	return ai
+}
