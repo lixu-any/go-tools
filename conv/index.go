@@ -36,6 +36,75 @@ func StrToFloat64(str string, i int) float64 {
 	return v2
 }
 
+//字符串转换位int
+func ParseInt64(val interface{}) int64 {
+
+	if val == nil {
+		return 0
+	}
+
+	switch ret := val.(type) {
+	case string:
+		return StrToInt64(ret)
+	case int8:
+		return int64(ret)
+	case uint8:
+		return int64(ret)
+	case int16:
+		return int64(ret)
+	case uint16:
+		return int64(ret)
+	case int:
+		return int64(ret)
+	case uint:
+		return int64(ret)
+	case int64:
+		return int64(ret)
+	case uint64:
+		return int64(ret)
+	case float32:
+		return int64(ret)
+	case float64:
+		return int64(ret)
+	}
+
+	return 0
+}
+
+func ParseInt(val interface{}) int {
+
+	if val == nil {
+		return 0
+	}
+
+	switch ret := val.(type) {
+	case string:
+		return StrToInt(ret)
+	case int8:
+		return int(ret)
+	case uint8:
+		return int(ret)
+	case int16:
+		return int(ret)
+	case uint16:
+		return int(ret)
+	case int:
+		return int(ret)
+	case uint:
+		return int(ret)
+	case int64:
+		return int(ret)
+	case uint64:
+		return int(ret)
+	case float32:
+		return int(ret)
+	case float64:
+		return int(ret)
+	}
+
+	return 0
+}
+
 //浮点数转换int卡类型
 func FloatTostr(floatstr float64, i int) string {
 	return strconv.FormatFloat(floatstr, 'E', -1, i)

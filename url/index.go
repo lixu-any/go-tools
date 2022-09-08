@@ -40,6 +40,8 @@ func PostBody(apiurl string, data map[string]interface{}) (content []byte, httpc
 
 	content, err = ioutil.ReadAll(resp.Body)
 
+	resp.Body.Close()
+
 	return
 }
 
@@ -65,6 +67,8 @@ func PostParam(apiurl string, data map[string]string) (content []byte, httpcode 
 
 	content, err = ioutil.ReadAll(resp.Body)
 
+	resp.Body.Close()
+
 	return
 }
 
@@ -85,6 +89,8 @@ func Get(apiurl string) (content []byte, httpcode int, err error) {
 	httpcode = resp.StatusCode
 
 	content, err = ioutil.ReadAll(resp.Body)
+
+	resp.Body.Close()
 
 	return
 }
