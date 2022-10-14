@@ -424,3 +424,10 @@ func readFilesql(pth, tbname string) (sql string, err error) {
 
 	return
 }
+
+func ReadFilesql(pth, tbname string) (sql string, err error) {
+
+	pth += ".sql"
+
+	return readFilesql(pth, tbname)
+}

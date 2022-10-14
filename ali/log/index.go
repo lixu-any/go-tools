@@ -192,3 +192,25 @@ func GetLog(logname, sql string, starttime, endtime int64, nums int64) (lst []ma
 
 	return
 }
+
+func GetLog1(logname, sql string, starttime, endtime int64, nums int64, pas int64) (lst []map[string]string, err error) {
+
+	// 创建日志服务Client。
+	client := sls.CreateNormalInterface(AliDefaultConfig.Endpoint, AliDefaultConfig.AccessKeyId, AliDefaultConfig.AccessKeySecret, "")
+
+	resp, err := client.GetLogs(AliDefaultConfig.Project, logname, "", starttime, endtime, sql, nums, pas*nums, true)
+	if err != nil {
+		return
+	}
+
+	logs := resp.Logs
+	for i := range logs {
+		var item = make(map[string]string)
+		for k, v := range logs[i] {
+			item[k] = v
+		}
+		lst = append(lst, item)
+	}
+
+	return
+}
