@@ -269,15 +269,16 @@ func (con *LXredis) TTL() (ttl int, err error) {
 }
 
 //排他锁
-func (con *LXredis) LOCK(ext struct{ Times int }) (islock bool, err error) {
+func (con *LXredis) LOCK(ex int) (islock bool, err error) {
 
 	var (
 		nname string
 		ix    = "lock::"
+		binf  int
 	)
 
-	if ext.Times < 1 {
-		ext.Times = 1
+	if ex < 1 {
+		ex = 1
 	}
 
 	if con.Prefix != "" {
@@ -290,13 +291,12 @@ func (con *LXredis) LOCK(ext struct{ Times int }) (islock bool, err error) {
 
 	defer redis.Close()
 
-	islock, err = redigo.Bool(redis.Do("EXISTS", nname))
-	if err != nil {
-		return
-	}
+	binf, err = redigo.Int(redis.Do("setnx", nname, ""))
 
-	if !islock {
-		_, err = redis.Do("set", nname, con.Val, "EX", ext.Times)
+	redis.Do("EXPIRE", nname, ex)
+
+	if err == nil && binf == 0 {
+		islock = true
 	}
 
 	return
