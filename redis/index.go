@@ -18,9 +18,10 @@ type MapRedisConfig struct {
 }
 
 type LXredis struct {
-	Name string
-	Val  string
-	DB   string
+	Name   string
+	Val    string
+	DB     string
+	Prefix string
 }
 
 func GetLxRedis() redigo.Conn {
@@ -46,6 +47,7 @@ func InitRedis(config MapRedisConfig) (err error) {
 			c.Close()
 			return nil, err
 		}
+
 		return c, nil
 	}, pool_size)
 
@@ -55,7 +57,13 @@ func InitRedis(config MapRedisConfig) (err error) {
 //判断key是否存在
 func (con *LXredis) IsExist() (isexit bool, err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -74,7 +82,13 @@ func (con *LXredis) IsExist() (isexit bool, err error) {
 //设置redis字符串
 func (con *LXredis) Set() (err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -94,7 +108,13 @@ func (con *LXredis) Set() (err error) {
 //设置redis字符串 加过期时间
 func (con *LXredis) SetTime(times int) (err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -114,7 +134,13 @@ func (con *LXredis) SetTime(times int) (err error) {
 //获取redis
 func (con *LXredis) GET() (gstr string, err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -124,6 +150,7 @@ func (con *LXredis) GET() (gstr string, err error) {
 		if _, err = redis.Do("SELECT", con.DB); err != nil {
 			return
 		}
+
 	}
 
 	gstr, err = redigo.String(redis.Do("GET", nname))
@@ -134,7 +161,13 @@ func (con *LXredis) GET() (gstr string, err error) {
 //自增
 func (con *LXredis) INCR() (nums int64, err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -154,7 +187,13 @@ func (con *LXredis) INCR() (nums int64, err error) {
 //删除
 func (con *LXredis) DELETE() (err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -180,7 +219,13 @@ func (con *LXredis) DELETE() (err error) {
 //设置过期时间
 func (con *LXredis) EXPIRE(times int) (err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -200,7 +245,13 @@ func (con *LXredis) EXPIRE(times int) (err error) {
 //查看过期时间
 func (con *LXredis) TTL() (ttl int, err error) {
 
-	nname := lxresconfig.Prefix + con.Name
+	var nname string
+
+	if con.Prefix != "" {
+		nname = con.Prefix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + con.Name
+	}
 
 	redis := GetLxRedis()
 
@@ -213,6 +264,40 @@ func (con *LXredis) TTL() (ttl int, err error) {
 	}
 
 	ttl, err = redigo.Int(redis.Do("ttl", nname))
+
+	return
+}
+
+//排他锁
+func (con *LXredis) LOCK(ext struct{ Times int }) (islock bool, err error) {
+
+	var (
+		nname string
+		ix    = "lock::"
+	)
+
+	if ext.Times < 1 {
+		ext.Times = 1
+	}
+
+	if con.Prefix != "" {
+		nname = con.Prefix + ix + con.Name
+	} else {
+		nname = lxresconfig.Prefix + ix + con.Name
+	}
+
+	redis := GetLxRedis()
+
+	defer redis.Close()
+
+	islock, err = redigo.Bool(redis.Do("EXISTS", nname))
+	if err != nil {
+		return
+	}
+
+	if !islock {
+		_, err = redis.Do("set", nname, con.Val, "EX", ext.Times)
+	}
 
 	return
 }
