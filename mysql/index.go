@@ -52,6 +52,7 @@ type ListConfig struct {
 	OrderBy      string    //排序
 	DBIndex      string    //指定数据库
 	CacheDB      string    //数据库缓存 Redis数据库索引
+	CacheName    string    //缓存的名字
 	Orm          orm.Ormer //实例化 ORM
 	Exexpire     int       //缓存过期时间 -1不使用缓存
 	MaxCount     int       //最大条数 默认100
@@ -109,9 +110,12 @@ func _getList(req ListConfig) (nums int64, lst []map[string]interface{}, err err
 	)
 
 	if req.Exexpire > 0 {
-		rkey = "db::" + req.TableName + "::" + lencry.MD5(qstr)
 
-		_redis.Name = rkey
+		if req.CacheName != "" {
+			_redis.Name = req.CacheName
+		} else {
+			_redis.Name = "db::" + req.TableName + "::" + lencry.MD5(qstr)
+		}
 
 		if b, _ := _redis.IsExist(); b {
 			str, _ := _redis.GET()
