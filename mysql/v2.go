@@ -3,6 +3,7 @@ package lmysql
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/astaxie/beego/orm"
 	lconv "github.com/lixu-any/go-tools/conv"
@@ -118,6 +119,10 @@ func GetListV2(req ListConfigV2, retdata interface{}) (nums int64, err error) {
 	nums, err = req.Orm.Raw(sql).Values(&dblst)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "doesn't exist") {
+			err = nil
+			return
+		}
 		return
 	}
 
