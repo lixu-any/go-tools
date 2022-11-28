@@ -2,6 +2,8 @@ package l_file
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -161,4 +163,14 @@ func DownloadFile(url string, localPath string, fb func(length, downLen int64)) 
 		fmt.Println(err)
 	}
 	return err
+}
+
+func FileMD5(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	hash := md5.New()
+	_, _ = io.Copy(hash, file)
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
